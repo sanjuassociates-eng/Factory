@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd ../.. && npm install && npm run build -w @steel-factory/shared && cd apps/api && node ../../node_modules/prisma/build/index.js generate && node ../../node_modules/@nestjs/cli/bin/nest.js build",
+  "buildCommand": "cd ../.. && npm install --include=dev && npm run build -w @steel-factory/shared && cd apps/api && node ../../node_modules/prisma/build/index.js generate && node ../../node_modules/@nestjs/cli/bin/nest.js build",
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/(.*)", "destination": "/api/index.js" }
