@@ -18,34 +18,6 @@ async function main() {
     },
   });
 
-  // Production staff (can log production + view stock)
-  const prodHash = await bcrypt.hash('prod123', 10);
-  await prisma.user.upsert({
-    where: { email: 'production@factory.com' },
-    update: {},
-    create: {
-      name: 'Production Staff',
-      email: 'production@factory.com',
-      passwordHash: prodHash,
-      isAdmin: false,
-      permissions: ['LOG_PRODUCTION'],
-    },
-  });
-
-  // Dispatcher (dispatch vehicles + manage buyers + view stock)
-  const dispHash = await bcrypt.hash('dispatch123', 10);
-  await prisma.user.upsert({
-    where: { email: 'dispatcher@factory.com' },
-    update: {},
-    create: {
-      name: 'Dispatcher',
-      email: 'dispatcher@factory.com',
-      passwordHash: dispHash,
-      isAdmin: false,
-      permissions: ['DISPATCH_VEHICLES', 'MANAGE_BUYERS'],
-    },
-  });
-
   // Products
   const productData = [
     { name: 'TMT Bar', grade: 'Fe500D', unit: 'MT' },
@@ -76,9 +48,7 @@ async function main() {
   }
 
   console.log('Seed complete.\n');
-  console.log('Admin:      admin@factory.com      / admin123');
-  console.log('Production: production@factory.com / prod123');
-  console.log('Dispatcher: dispatcher@factory.com / dispatch123');
+  console.log('Admin: admin@factory.com / admin123');
 }
 
 main()
