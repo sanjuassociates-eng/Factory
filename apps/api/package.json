@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "nest build",
-    "vercel-build": "prisma generate && nest build",
-    "dev": "nest start --watch",
+    "build": "npx nest build",
+    "vercel-build": "npx prisma generate && npx nest build",
+    "dev": "npx nest start --watch",
     "start": "node dist/main",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
