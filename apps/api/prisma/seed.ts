@@ -4,8 +4,11 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) throw new Error('ADMIN_PASSWORD env var is required');
+
   // Admin
-  const adminHash = await bcrypt.hash('admin123', 10);
+  const adminHash = await bcrypt.hash(adminPassword, 10);
   const admin = await prisma.user.upsert({
     where: { email: 'admin@factory.com' },
     update: {},
@@ -48,7 +51,7 @@ async function main() {
   }
 
   console.log('Seed complete.\n');
-  console.log('Admin: admin@factory.com / admin123');
+  console.log('Admin: admin@factory.com / <your ADMIN_PASSWORD>');
 }
 
 main()
