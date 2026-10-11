@@ -1,11 +1,5 @@
 {
-  "functions": {
-    "dist/src/main-serverless.js": {
-      "memory": 512,
-      "maxDuration": 30
-    }
-  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/dist/src/main-serverless.js" }
+    { "source": "/(.*)", "destination": "/api/index.js" }
   ]
 }
