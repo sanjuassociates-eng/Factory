@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --color-steel-50: #f8fafc;
+  --color-steel-100: #f1f5f9;
+  --color-steel-200: #e2e8f0;
+  --color-steel-700: #334155;
+  --color-steel-800: #1e293b;
+  --color-steel-900: #0f172a;
+  --color-accent: #ea580c;
+  --color-accent-hover: #c2410c;
+}
+
+body {
+  @apply bg-steel-50 text-steel-900 antialiased;
+}

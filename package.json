@@ -1,0 +1,21 @@
+{
+  "name": "steel-factory",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @steel-factory/api\" \"npm run dev -w @steel-factory/web\"",
+    "dev:api": "npm run dev -w @steel-factory/api",
+    "dev:web": "npm run dev -w @steel-factory/web",
+    "build": "npm run build -w @steel-factory/shared && npm run build -w @steel-factory/api && npm run build -w @steel-factory/web",
+    "db:generate": "npm run db:generate -w @steel-factory/api",
+    "db:migrate": "npm run db:migrate -w @steel-factory/api",
+    "db:seed": "npm run db:seed -w @steel-factory/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.2"
+  }
+}
