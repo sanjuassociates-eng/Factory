@@ -1,21 +1,13 @@
-/**
- * Vercel Serverless entry point for the NestJS API.
- * The bootstrapped app is cached across warm invocations to avoid re-initialising
- * the DI container on every request.
- */
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import serverlessHttp from 'serverless-http';
+import type { INestApplication } from '@nestjs/common';
 import type { IncomingMessage, ServerResponse } from 'http';
 
-type ServerlessHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+let cachedApp: INestApplication | null = null;
 
-let cachedHandler: ServerlessHandler | null = null;
-
-async function createHandler(): Promise<ServerlessHandler> {
+async function bootstrap(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule, {
-    // Suppress logs in serverless — Vercel captures stdout anyway
     logger: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['log', 'error', 'warn'],
   });
 
@@ -30,15 +22,13 @@ async function createHandler(): Promise<ServerlessHandler> {
   );
 
   await app.init();
-
-  // Wrap the underlying Express instance with serverless-http
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return serverlessHttp(app.getHttpAdapter().getInstance()) as unknown as ServerlessHandler;
+  return app;
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
-  if (!cachedHandler) {
-    cachedHandler = await createHandler();
+  if (!cachedApp) {
+    cachedApp = await bootstrap();
   }
-  return cachedHandler(req, res);
+  const expressApp = cachedApp.getHttpAdapter().getInstance();
+  expressApp(req, res);
 }
