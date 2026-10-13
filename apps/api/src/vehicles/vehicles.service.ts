@@ -6,7 +6,7 @@ import {
 import { VehicleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StockService } from '../stock/stock.service';
-import { CreateVehicleDto } from './dto/vehicle.dto';
+import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicle.dto';
 
 const VEHICLE_INCLUDE = {
   buyer: { select: { id: true, name: true, contact: true } },
@@ -92,8 +92,68 @@ export class VehiclesService {
     });
   }
 
-  async markPickup(id: string) {
+  async update(id: string, dto: UpdateVehicleDto) {
     const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
+    if (!vehicle) throw new NotFoundException('Vehicle not found');
+    if (vehicle.status !== VehicleStatus.REGISTERED) {
+      throw new BadRequestException('Can only edit vehicles with REGISTERED status');
+    }
+
+    // If items are being replaced, validate stock availability
+    if (dto.items?.length) {
+      const productIds = [...new Set(dto.items.map((i) => i.productId))];
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: productIds }, isActive: true },
+      });
+      if (products.length !== productIds.length) {
+        throw new NotFoundException('One or more products not found');
+      }
+
+      // Adjust available stock: add back what this vehicle currently holds
+      const currentItems = await this.prisma.vehicleItem.findMany({ where: { vehicleId: id } });
+      const balances = await this.stockService.getBalances();
+      const adjusted = new Map(balances.map((b) => [b.productId, b.available]));
+      for (const ci of currentItems) {
+        adjusted.set(ci.productId, (adjusted.get(ci.productId) ?? 0) + ci.tonnage);
+      }
+
+      const errors: string[] = [];
+      for (const item of dto.items) {
+        const avail = adjusted.get(item.productId) ?? 0;
+        const product = products.find((p) => p.id === item.productId)!;
+        if (avail < item.tonnage) {
+          errors.push(
+            `Insufficient stock for ${product.name} (${product.grade}). Available: ${avail} ${product.unit}`,
+          );
+        }
+      }
+      if (errors.length) throw new BadRequestException(errors.join('; '));
+    }
+
+    return this.prisma.vehicle.update({
+      where: { id },
+      data: {
+        ...(dto.buyerId && { buyerId: dto.buyerId }),
+        ...(dto.vehicleNumber && { vehicleNumber: dto.vehicleNumber.toUpperCase() }),
+        ...(dto.driverName !== undefined && { driverName: dto.driverName }),
+        ...(dto.driverPhone !== undefined && { driverPhone: dto.driverPhone }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+        ...(dto.items && {
+          items: {
+            deleteMany: {},
+            create: dto.items.map((item) => ({
+              productId: item.productId,
+              tonnage: item.tonnage,
+              pricePerUnit: item.pricePerUnit,
+            })),
+          },
+        }),
+      },
+      include: VEHICLE_INCLUDE,
+    });
+  }
+
+  async markPickup(id: string) {    const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
     if (!vehicle) throw new NotFoundException('Vehicle not found');
     if (vehicle.status === VehicleStatus.PICKED_UP) {
       throw new BadRequestException('Vehicle already picked up');

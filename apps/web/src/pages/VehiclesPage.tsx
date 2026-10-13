@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { AppLayout } from '@/components/AppLayout';
@@ -34,6 +34,7 @@ type FormData = z.infer<typeof schema>;
 
 interface VehicleItem {
   id: string;
+  productId: string;
   tonnage: number;
   pricePerUnit: number;
   product: { name: string; grade: string; unit: string };
@@ -56,6 +57,7 @@ interface Vehicle {
 export function VehiclesPage() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
 
   const { data: buyers = [] } = useQuery({
     queryKey: ['buyers'],
@@ -104,6 +106,35 @@ export function VehiclesPage() {
     },
   });
 
+  // ── Edit form ──
+  const {
+    register: eRegister, handleSubmit: eHandleSubmit, control: eControl,
+    watch: eWatch, setValue: eSetValue, reset: eReset, formState: { errors: eErrors },
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { buyerId: '', items: [] } });
+  const { fields: eFields, append: eAppend, remove: eRemove } = useFieldArray({ control: eControl, name: 'items' });
+  const eWatchedBuyerId = eWatch('buyerId');
+  const eWatchedItems = eWatch('items');
+
+  const openEdit = (v: Vehicle) => {
+    setEditingVehicle(v);
+    eReset({
+      buyerId: v.buyer.id,
+      vehicleNumber: v.vehicleNumber,
+      driverName: v.driverName ?? '',
+      driverPhone: v.driverPhone ?? '',
+      notes: v.notes ?? '',
+      items: v.items.map((i) => ({ productId: i.productId, tonnage: i.tonnage, pricePerUnit: i.pricePerUnit })),
+    });
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: (data: FormData) => api.patch(`/vehicles/${editingVehicle!.id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['vehicles'] });
+      qc.invalidateQueries({ queryKey: ['stock'] });
+      setEditingVehicle(null);
+    },
+  });
   const pickupMutation = useMutation({
     mutationFn: (id: string) => api.patch(`/vehicles/${id}/pickup`),
     onSuccess: () => {
@@ -131,14 +162,13 @@ export function VehiclesPage() {
 
         {/* ── Fixed top: action button + collapsible form ── */}
         <div className="flex-shrink-0 space-y-4">
-          <Button onClick={() => setShowForm(!showForm)}>
+          <Button onClick={() => { setShowForm(!showForm); setEditingVehicle(null); }}>
             {showForm ? 'Cancel' : 'Register Vehicle'}
           </Button>
 
           {showForm && (
             <Card>
-              <CardTitle>New Vehicle Dispatch</CardTitle>
-              <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} className="mt-4 space-y-5">
+              <CardTitle>New Vehicle Dispatch</CardTitle>              <form onSubmit={handleSubmit((d) => createMutation.mutate(d))} className="mt-4 space-y-5">
                 {/* Buyer */}
                 <div>
                   <label className="mb-1 block text-sm font-medium">Buyer</label>
@@ -240,6 +270,92 @@ export function VehiclesPage() {
               </form>
             </Card>
           )}
+
+          {/* ── Edit form ── */}
+          {editingVehicle && (
+            <Card>
+              <div className="flex items-center justify-between">
+                <CardTitle>Edit Vehicle — {editingVehicle.vehicleNumber}</CardTitle>
+                <button onClick={() => setEditingVehicle(null)} className="text-sm text-steel-500 hover:text-steel-800">✕ Close</button>
+              </div>
+              <form onSubmit={eHandleSubmit((d) => updateMutation.mutate(d))} className="mt-4 space-y-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Buyer</label>
+                    <SearchableSelect options={buyerOptions} value={eWatchedBuyerId}
+                      onChange={(v) => eSetValue('buyerId', v, { shouldValidate: true })} placeholder="Search buyer..." />
+                    {eErrors.buyerId && <p className="mt-1 text-sm text-red-600">{eErrors.buyerId.message}</p>}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Vehicle Number</label>
+                    <Input placeholder="MH12AB1234" {...eRegister('vehicleNumber')} />
+                    {eErrors.vehicleNumber && <p className="mt-1 text-xs text-red-600">{eErrors.vehicleNumber.message}</p>}
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Driver Name</label>
+                    <Input {...eRegister('driverName')} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Driver Phone</label>
+                    <Input type="tel" {...eRegister('driverPhone')} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-1 block text-sm font-medium">Notes</label>
+                    <Input {...eRegister('notes')} />
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-sm font-medium">Products</label>
+                    <Button type="button" variant="ghost" size="sm"
+                      onClick={() => eAppend({ productId: '', tonnage: 0, pricePerUnit: 0 })}>
+                      <Plus className="mr-1 h-4 w-4" /> Add Product
+                    </Button>
+                  </div>
+                  <div className="mb-1 hidden grid-cols-[1fr_100px_120px_32px] gap-2 px-3 text-xs font-medium text-steel-500 sm:grid">
+                    <span>Product</span><span>Tonnage</span><span>Rate (₹/MT)</span><span />
+                  </div>
+                  <div className="space-y-2">
+                    {eFields.map((field, idx) => {
+                      const pid = eWatch(`items.${idx}.productId`);
+                      return (
+                        <div key={field.id} className="grid gap-2 rounded-lg border border-steel-200 bg-steel-50 p-3 sm:grid-cols-[1fr_100px_120px_32px] sm:items-center">
+                          <SearchableSelect options={productOptions} value={pid}
+                            onChange={(v) => eSetValue(`items.${idx}.productId`, v, { shouldValidate: true })}
+                            placeholder="Select product..." />
+                          <Input type="number" step="0.01" placeholder="0.00" {...eRegister(`items.${idx}.tonnage`)} />
+                          <Input type="number" step="1" placeholder="0" {...eRegister(`items.${idx}.pricePerUnit`)} />
+                          {eFields.length > 1 && (
+                            <button type="button" onClick={() => eRemove(idx)}
+                              className="self-center rounded-lg p-1.5 text-red-500 hover:bg-red-50">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {eWatchedItems.reduce((s, i) => s + (Number(i.tonnage) || 0) * (Number(i.pricePerUnit) || 0), 0) > 0 && (
+                    <div className="mt-3 flex justify-end rounded-lg bg-steel-100 px-4 py-2 text-sm">
+                      <span className="mr-4 text-steel-600">Invoice Total</span>
+                      <span className="font-bold text-steel-900">{formatCurrency(eWatchedItems.reduce((s, i) => s + (Number(i.tonnage) || 0) * (Number(i.pricePerUnit) || 0), 0))}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-4">
+                  <Button type="submit" disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? 'Saving…' : 'Save Changes'}
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setEditingVehicle(null)}>Cancel</Button>
+                  {updateMutation.isError && (
+                    <p className="text-sm text-red-600">
+                      {(updateMutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed'}
+                    </p>
+                  )}
+                </div>
+              </form>
+            </Card>
+          )}
         </div>
 
         {/* ── Table fills remaining height ── */}
@@ -291,6 +407,10 @@ export function VehiclesPage() {
                     <div className="flex gap-2">
                       {r.status === 'REGISTERED' && (
                         <>
+                          <Button size="sm" variant="ghost"
+                            onClick={() => { setShowForm(false); openEdit(r); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
                           <Button size="sm"
                             onClick={() => { if (confirm(`Mark ${r.vehicleNumber} as picked up?`)) pickupMutation.mutate(r.id); }}
                             disabled={pickupMutation.isPending}>

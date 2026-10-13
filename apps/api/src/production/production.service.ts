@@ -33,6 +33,7 @@ export class ProductionService {
       data: {
         productId: dto.productId,
         tonnage: dto.tonnage,
+        pricePerUnit: dto.pricePerUnit ?? 0,
         date: new Date(dto.date),
         operatorId,
         notes: dto.notes,

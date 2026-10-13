@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ProductionLog" ADD COLUMN     "pricePerUnit" DOUBLE PRECISION NOT NULL DEFAULT 0;

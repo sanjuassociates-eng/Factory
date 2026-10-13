@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DataTable, formatDate, formatTonnage } from '@/components/ui/DataTable';
+import { formatCurrency } from '@/lib/utils';
 
 const schema = z.object({
   productId: z.string().min(1, 'Select a product'),
   tonnage: z.coerce.number().min(0.01, 'Must be > 0'),
+  pricePerUnit: z.coerce.number().min(0).optional(),
   date: z.string().min(1),
   notes: z.string().optional(),
 });
@@ -22,6 +24,7 @@ type FormData = z.infer<typeof schema>;
 interface ProductionLog {
   id: string;
   tonnage: number;
+  pricePerUnit: number;
   date: string;
   notes?: string;
   product: { name: string; grade: string; unit: string };
@@ -49,7 +52,7 @@ export function ProductionPage() {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { date: today },
+    defaultValues: { date: today, pricePerUnit: 0 },
   });
 
   const mutation = useMutation({
@@ -57,7 +60,7 @@ export function ProductionPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['production'] });
       qc.invalidateQueries({ queryKey: ['stock'] });
-      reset({ date: today, productId: '', tonnage: 0, notes: '' });
+      reset({ date: today, productId: '', tonnage: 0, pricePerUnit: 0, notes: '' });
     },
   });
 
@@ -92,6 +95,10 @@ export function ProductionPage() {
               {errors.tonnage && <p className="mt-1 text-xs text-red-600">{errors.tonnage.message}</p>}
             </div>
             <div>
+              <label className="mb-1 block text-sm font-medium">Cost Price (₹/MT)</label>
+              <Input type="number" step="1" placeholder="0" {...register('pricePerUnit')} />
+            </div>
+            <div>
               <label className="mb-1 block text-sm font-medium">Notes</label>
               <Input {...register('notes')} placeholder="Optional" />
             </div>
@@ -116,6 +123,7 @@ export function ProductionPage() {
                 { key: 'date', header: 'Date', render: (r) => formatDate(r.date), minWidth: '100px' },
                 { key: 'product', header: 'Product', render: (r) => `${r.product.name} (${r.product.grade})`, minWidth: '160px' },
                 { key: 'tonnage', header: 'Tonnage', render: (r) => formatTonnage(r.tonnage, r.product.unit), minWidth: '100px' },
+                { key: 'pricePerUnit', header: 'Cost/MT', render: (r) => r.pricePerUnit > 0 ? formatCurrency(r.pricePerUnit) : '—', minWidth: '110px' },
                 { key: 'operator', header: 'Logged By', render: (r) => r.operator.name, minWidth: '120px' },
                 { key: 'notes', header: 'Notes', render: (r) => r.notes || '—' },
               ]}

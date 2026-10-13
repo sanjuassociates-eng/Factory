@@ -18,7 +18,7 @@ import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { AuditInterceptor } from '../audit/audit.interceptor';
 import { VehiclesService } from './vehicles.service';
-import { CreateVehicleDto } from './dto/vehicle.dto';
+import { CreateVehicleDto, UpdateVehicleDto } from './dto/vehicle.dto';
 
 @Controller('vehicles')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)
@@ -52,6 +52,12 @@ export class VehiclesController {
   @UseInterceptors(AuditInterceptor)
   create(@Body() dto: CreateVehicleDto, @Req() req: { user: { id: string } }) {
     return this.vehiclesService.create(dto, req.user.id);
+  }
+
+  @Patch(':id')
+  @UseInterceptors(AuditInterceptor)
+  update(@Param('id') id: string, @Body() dto: UpdateVehicleDto) {
+    return this.vehiclesService.update(id, dto);
   }
 
   @Patch(':id/pickup')

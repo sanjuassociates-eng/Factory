@@ -52,15 +52,16 @@ model Product {
 }
 
 model ProductionLog {
-  id         String   @id @default(cuid())
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id])
-  tonnage    Float
-  date       DateTime @db.Date
-  operatorId String
-  operator   User     @relation(fields: [operatorId], references: [id])
-  notes      String?
-  createdAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  tonnage      Float
+  pricePerUnit Float    @default(0)
+  date         DateTime @db.Date
+  operatorId   String
+  operator     User     @relation(fields: [operatorId], references: [id])
+  notes        String?
+  createdAt    DateTime @default(now())
 
   @@index([date])
   @@index([productId])

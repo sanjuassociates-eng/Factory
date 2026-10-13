@@ -40,3 +40,31 @@ export class CreateVehicleDto {
   @Type(() => VehicleItemDto)
   items!: VehicleItemDto[];
 }
+
+export class UpdateVehicleDto {
+  @IsOptional()
+  @IsString()
+  buyerId?: string;
+
+  @IsOptional()
+  @IsString()
+  vehicleNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  driverName?: string;
+
+  @IsOptional()
+  @IsString()
+  driverPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VehicleItemDto)
+  items?: VehicleItemDto[];
+}

@@ -10,6 +10,12 @@ export class CreateProductionDto {
   @Min(0.01)
   tonnage!: number;
 
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  pricePerUnit?: number;
+
   @IsDateString()
   date!: string;
 
