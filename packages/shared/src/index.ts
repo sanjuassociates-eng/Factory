@@ -4,6 +4,7 @@ export const Permission = {
   MANAGE_BUYERS: 'MANAGE_BUYERS',
   DISPATCH_VEHICLES: 'DISPATCH_VEHICLES',
   MANAGE_USERS: 'MANAGE_USERS',
+  MANAGE_STOCK: 'MANAGE_STOCK',
   VIEW_AUDIT: 'VIEW_AUDIT',
   VIEW_REVENUE: 'VIEW_REVENUE',
 } as const;
@@ -46,6 +47,7 @@ export interface StockBalance {
   produced: number;
   committed: number;
   dispatched: number;
+  adjusted: number;
   available: number;
 }
 

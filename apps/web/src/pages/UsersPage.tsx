@@ -18,6 +18,7 @@ const PERM_LABELS: Record<Permission, string> = {
   [Permission.MANAGE_BUYERS]: 'Manage Buyers',
   [Permission.DISPATCH_VEHICLES]: 'Dispatch Vehicles',
   [Permission.MANAGE_USERS]: 'Manage Users',
+  [Permission.MANAGE_STOCK]: 'Manage Stock (Adjustments)',
   [Permission.VIEW_AUDIT]: 'View Audit Logs',
   [Permission.VIEW_REVENUE]: 'View Revenue',
 };

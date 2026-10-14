@@ -278,6 +278,11 @@ export function VehiclesPage() {
                 <CardTitle>Edit Vehicle — {editingVehicle.vehicleNumber}</CardTitle>
                 <button onClick={() => setEditingVehicle(null)} className="text-sm text-steel-500 hover:text-steel-800">✕ Close</button>
               </div>
+              {editingVehicle.status === 'PICKED_UP' && (
+                <div className="mt-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                  ⚠️ This vehicle has already been picked up. Editing items will recalculate stock and revenue automatically.
+                </div>
+              )}
               <form onSubmit={eHandleSubmit((d) => updateMutation.mutate(d))} className="mt-4 space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -405,12 +410,14 @@ export function VehiclesPage() {
                   key: 'actions', header: 'Actions', minWidth: '160px',
                   render: (r) => (
                     <div className="flex gap-2">
+                      {r.status !== 'CANCELLED' && (
+                        <Button size="sm" variant="ghost"
+                          onClick={() => { setShowForm(false); openEdit(r); }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       {r.status === 'REGISTERED' && (
                         <>
-                          <Button size="sm" variant="ghost"
-                            onClick={() => { setShowForm(false); openEdit(r); }}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
                           <Button size="sm"
                             onClick={() => { if (confirm(`Mark ${r.vehicleNumber} as picked up?`)) pickupMutation.mutate(r.id); }}
                             disabled={pickupMutation.isPending}>

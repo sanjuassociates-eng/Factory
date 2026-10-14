@@ -95,8 +95,8 @@ export class VehiclesService {
   async update(id: string, dto: UpdateVehicleDto) {
     const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
     if (!vehicle) throw new NotFoundException('Vehicle not found');
-    if (vehicle.status !== VehicleStatus.REGISTERED) {
-      throw new BadRequestException('Can only edit vehicles with REGISTERED status');
+    if (vehicle.status === VehicleStatus.CANCELLED) {
+      throw new BadRequestException('Cannot edit a cancelled vehicle');
     }
 
     // If items are being replaced, validate stock availability

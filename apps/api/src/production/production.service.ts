@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductionDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto } from './dto/production.dto';
+
+const LOG_INCLUDE = {
+  product: { select: { id: true, name: true, grade: true, unit: true } },
+  operator: { select: { id: true, name: true } },
+};
 
 @Injectable()
 export class ProductionService {
@@ -17,10 +22,7 @@ export class ProductionService {
 
     return this.prisma.productionLog.findMany({
       where,
-      include: {
-        product: { select: { id: true, name: true, grade: true, unit: true } },
-        operator: { select: { id: true, name: true } },
-      },
+      include: LOG_INCLUDE,
       orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
     });
   }
@@ -38,10 +40,35 @@ export class ProductionService {
         operatorId,
         notes: dto.notes,
       },
-      include: {
-        product: { select: { id: true, name: true, grade: true, unit: true } },
-        operator: { select: { id: true, name: true } },
-      },
+      include: LOG_INCLUDE,
     });
+  }
+
+  async update(id: string, dto: UpdateProductionDto) {
+    const log = await this.prisma.productionLog.findUnique({ where: { id } });
+    if (!log) throw new NotFoundException('Production log not found');
+
+    if (dto.productId) {
+      const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
+      if (!product || !product.isActive) throw new NotFoundException('Product not found');
+    }
+
+    return this.prisma.productionLog.update({
+      where: { id },
+      data: {
+        ...(dto.productId && { productId: dto.productId }),
+        ...(dto.tonnage !== undefined && { tonnage: dto.tonnage }),
+        ...(dto.pricePerUnit !== undefined && { pricePerUnit: dto.pricePerUnit }),
+        ...(dto.date && { date: new Date(dto.date) }),
+        ...(dto.notes !== undefined && { notes: dto.notes }),
+      },
+      include: LOG_INCLUDE,
+    });
+  }
+
+  async remove(id: string) {
+    const log = await this.prisma.productionLog.findUnique({ where: { id } });
+    if (!log) throw new NotFoundException('Production log not found');
+    return this.prisma.productionLog.delete({ where: { id } });
   }
 }

@@ -23,3 +23,29 @@ export class CreateProductionDto {
   @IsString()
   notes?: string;
 }
+
+export class UpdateProductionDto {
+  @IsOptional()
+  @IsString()
+  productId?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0.01)
+  tonnage?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  pricePerUnit?: number;
+
+  @IsOptional()
+  @IsDateString()
+  date?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}

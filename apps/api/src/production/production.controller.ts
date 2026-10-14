@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Permission } from '@steel-factory/shared';
 import { RequirePermissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { AuditInterceptor } from '../audit/audit.interceptor';
 import { ProductionService } from './production.service';
-import { CreateProductionDto } from './dto/production.dto';
+import { CreateProductionDto, UpdateProductionDto } from './dto/production.dto';
 
 @Controller('production')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)
@@ -26,5 +26,17 @@ export class ProductionController {
   @UseInterceptors(AuditInterceptor)
   create(@Body() dto: CreateProductionDto, @Req() req: { user: { id: string } }) {
     return this.productionService.create(dto, req.user.id);
+  }
+
+  @Patch(':id')
+  @UseInterceptors(AuditInterceptor)
+  update(@Param('id') id: string, @Body() dto: UpdateProductionDto) {
+    return this.productionService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @UseInterceptors(AuditInterceptor)
+  remove(@Param('id') id: string) {
+    return this.productionService.remove(id);
   }
 }

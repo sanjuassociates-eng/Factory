@@ -22,6 +22,13 @@ enum AuditAction {
   DELETE
 }
 
+enum StockAdjustmentType {
+  DAMAGE
+  WASTAGE
+  RETURN
+  CORRECTION
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -32,10 +39,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  productionLogs ProductionLog[]
-  vehicles       Vehicle[]       @relation("VehicleRegisteredBy")
-  buyersCreated  Buyer[]         @relation("BuyerCreatedBy")
-  auditLogs      AuditLog[]
+  productionLogs    ProductionLog[]
+  vehicles          Vehicle[]       @relation("VehicleRegisteredBy")
+  buyersCreated     Buyer[]         @relation("BuyerCreatedBy")
+  auditLogs         AuditLog[]
+  stockAdjustments  StockAdjustment[]
 }
 
 model Product {
@@ -47,8 +55,9 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  productionLogs ProductionLog[]
-  vehicleItems   VehicleItem[]
+  productionLogs    ProductionLog[]
+  vehicleItems      VehicleItem[]
+  stockAdjustments  StockAdjustment[]
 }
 
 model ProductionLog {
@@ -129,4 +138,22 @@ model AuditLog {
   @@index([entity])
   @@index([userId])
   @@index([createdAt])
+}
+
+model StockAdjustment {
+  id        String              @id @default(cuid())
+  productId String
+  product   Product             @relation(fields: [productId], references: [id])
+  tonnage   Float               // negative = reduction (damage/wastage), positive = addition (return/correction)
+  type      StockAdjustmentType
+  reason    String
+  date      DateTime            @db.Date
+  createdBy String
+  creator   User                @relation(fields: [createdBy], references: [id])
+  notes     String?
+  createdAt DateTime            @default(now())
+
+  @@index([productId])
+  @@index([date])
+  @@index([createdBy])
 }
