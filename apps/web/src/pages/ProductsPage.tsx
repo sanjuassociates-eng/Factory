@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '@/lib/api';
 import { AppLayout } from '@/components/AppLayout';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -27,6 +28,7 @@ interface Product {
 }
 
 export function ProductsPage() {
+  const [confirmDialog, setConfirmDialog] = useState<{ id: string } | null>(null);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 
@@ -118,7 +120,7 @@ export function ProductsPage() {
                   render: (r) =>
                     r.isActive ? (
                       <Button variant="danger" size="sm"
-                        onClick={() => { if (confirm('Deactivate this product?')) deactivateMutation.mutate(r.id); }}>
+                        onClick={() => setConfirmDialog({ id: r.id })}>
                         Deactivate
                       </Button>
                     ) : null,
@@ -130,6 +132,15 @@ export function ProductsPage() {
         </Card>
 
       </div>
+      <ConfirmDialog
+        isOpen={!!confirmDialog}
+        title="Deactivate Product"
+        message="Deactivate this product? It will no longer appear for new vehicle bookings."
+        confirmLabel="Deactivate"
+        danger
+        onConfirm={() => { if (confirmDialog) deactivateMutation.mutate(confirmDialog.id); setConfirmDialog(null); }}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </AppLayout>
   );
 }

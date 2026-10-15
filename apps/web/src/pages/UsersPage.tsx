@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import api from '@/lib/api';
 import { AppLayout } from '@/components/AppLayout';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -43,6 +44,7 @@ interface UserRow {
 }
 
 export function UsersPage() {
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 
@@ -192,7 +194,7 @@ export function UsersPage() {
                   key: 'actions', header: 'Actions', minWidth: '90px',
                   render: (r) => (
                     <Button variant="danger" size="sm"
-                      onClick={() => { if (confirm(`Delete ${r.name}?`)) deleteMutation.mutate(r.id); }}>
+                      onClick={() => setConfirmDelete({ id: r.id, name: r.name })}>
                       Delete
                     </Button>
                   ),
@@ -204,6 +206,15 @@ export function UsersPage() {
         </Card>
 
       </div>
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        title="Delete User"
+        message={`Delete ${confirmDelete?.name}? This cannot be undone.`}
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (confirmDelete) deleteMutation.mutate(confirmDelete.id); setConfirmDelete(null); }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </AppLayout>
   );
 }

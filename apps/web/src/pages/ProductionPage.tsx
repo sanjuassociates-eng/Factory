@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DataTable, formatDate, formatTonnage } from '@/components/ui/DataTable';
 import { formatCurrency } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const schema = z.object({
   productId: z.string().min(1, 'Select a product'),
@@ -42,6 +43,7 @@ export function ProductionPage() {
   const qc = useQueryClient();
   const today = localToday();
   const [editingLog, setEditingLog] = useState<ProductionLog | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string } | null>(null);
 
   const { data: products = [] } = useQuery({
     queryKey: ['products', 'active'],
@@ -193,7 +195,7 @@ export function ProductionPage() {
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
-                        onClick={() => { if (confirm('Delete this production entry? This will affect stock balances.')) deleteMutation.mutate(r.id); }}
+                        onClick={() => setConfirmDelete({ id: r.id })}
                         className="rounded p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600"
                         disabled={deleteMutation.isPending}>
                         <Trash2 className="h-3.5 w-3.5" />
@@ -208,6 +210,15 @@ export function ProductionPage() {
         </Card>
 
       </div>
+      <ConfirmDialog
+        isOpen={!!confirmDelete}
+        title="Delete Production Entry"
+        message="Delete this production entry? This will affect stock balances and cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => { if (confirmDelete) deleteMutation.mutate(confirmDelete.id); setConfirmDelete(null); }}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </AppLayout>
   );
 }

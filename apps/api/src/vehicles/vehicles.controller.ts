@@ -71,4 +71,10 @@ export class VehiclesController {
   cancel(@Param('id') id: string) {
     return this.vehiclesService.cancel(id);
   }
+
+  @Delete(':id/permanent')
+  @UseInterceptors(AuditInterceptor)
+  hardDelete(@Param('id') id: string) {
+    return this.vehiclesService.hardDelete(id);
+  }
 }

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Link } from 'react-router-dom';
 import api from '@/lib/api';
 import { AppLayout } from '@/components/AppLayout';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -32,6 +33,7 @@ interface Buyer {
 }
 
 export function BuyersPage() {
+  const [confirmDialog, setConfirmDialog] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
   const qc = useQueryClient();
   const { can } = useAuth();
   const canManage = can(Permission.MANAGE_BUYERS);
@@ -134,7 +136,11 @@ export function BuyersPage() {
                       render: (r: Buyer) =>
                         r.isActive ? (
                           <Button variant="danger" size="sm"
-                            onClick={() => { if (confirm(`Deactivate ${r.name}?`)) deactivateMutation.mutate(r.id); }}>
+                            onClick={() => setConfirmDialog({
+                              title: 'Deactivate Buyer',
+                              message: `Deactivate ${r.name}? They won't appear in new vehicle registrations.`,
+                              onConfirm: () => deactivateMutation.mutate(r.id),
+                            })}>
                             Deactivate
                           </Button>
                         ) : <span className="text-xs text-steel-400">Inactive</span>,
@@ -147,6 +153,15 @@ export function BuyersPage() {
         </Card>
 
       </div>
+      <ConfirmDialog
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title ?? ''}
+        message={confirmDialog?.message ?? ''}
+        confirmLabel="Deactivate"
+        danger
+        onConfirm={() => { confirmDialog?.onConfirm(); setConfirmDialog(null); }}
+        onCancel={() => setConfirmDialog(null)}
+      />
     </AppLayout>
   );
 }

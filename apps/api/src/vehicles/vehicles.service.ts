@@ -102,15 +102,31 @@ export class VehiclesService {
     // If items are being replaced, validate stock availability
     if (dto.items?.length) {
       const productIds = [...new Set(dto.items.map((i) => i.productId))];
+
+      // Get current items — products that are already in this vehicle (even if deactivated)
+      const currentItems = await this.prisma.vehicleItem.findMany({ where: { vehicleId: id } });
+      const existingProductIds = new Set(currentItems.map((ci) => ci.productId));
+
+      // Only require isActive for NEW products being added to this vehicle
+      const newProductIds = productIds.filter((pid) => !existingProductIds.has(pid));
+
+      // Fetch all products (allow inactive if already in vehicle)
       const products = await this.prisma.product.findMany({
-        where: { id: { in: productIds }, isActive: true },
+        where: { id: { in: productIds } },
       });
       if (products.length !== productIds.length) {
         throw new NotFoundException('One or more products not found');
       }
 
+      // Reject only NEW products that are inactive
+      const inactiveNew = products.filter((p) => newProductIds.includes(p.id) && !p.isActive);
+      if (inactiveNew.length) {
+        throw new BadRequestException(
+          `Cannot add deactivated products: ${inactiveNew.map((p) => `${p.name} (${p.grade})`).join(', ')}`,
+        );
+      }
+
       // Adjust available stock: add back what this vehicle currently holds
-      const currentItems = await this.prisma.vehicleItem.findMany({ where: { vehicleId: id } });
       const balances = await this.stockService.getBalances();
       const adjusted = new Map(balances.map((b) => [b.productId, b.available]));
       for (const ci of currentItems) {
@@ -184,6 +200,15 @@ export class VehiclesService {
       data: { status: VehicleStatus.CANCELLED },
       include: VEHICLE_INCLUDE,
     });
+  }
+
+  async hardDelete(id: string) {
+    const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
+    if (!vehicle) throw new NotFoundException('Vehicle not found');
+    if (vehicle.status === VehicleStatus.PICKED_UP) {
+      throw new BadRequestException('Cannot delete a vehicle that has already been picked up. Use Cancel instead.');
+    }
+    return this.prisma.vehicle.delete({ where: { id } });
   }
 
   async getTodayRevenue(): Promise<number> {
